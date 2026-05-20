@@ -1,0 +1,21 @@
+# 3-Strike Drowsiness System Update
+
+I've successfully rewritten both the Python camera code and the ESP32 hardware code to include your "3-Strike" logic!
+
+Here is how your system behaves now:
+
+### How The 3-Strike System Works
+1. **Strike 1**: The very first time you close your eyes for 3.0 seconds, Python sends a `'W'` (Warning) signal. The ESP32 instantly blasts the buzzer to wake you up, but keeps the motor running at full speed. When you open your eyes, the buzzer stops.
+2. **Strike 2**: The second time you close your eyes, it sends another `'W'` signal. The buzzer blasts again to wake you up, but the car continues to drive. When you open your eyes, the buzzer stops.
+3. **Strike 3**: You've fallen asleep a third time! Python sends the `'E'` (Emergency) signal. The ESP32 turns on the buzzer and immediately begins the unavoidable emergency protocol:
+   - It gradually slows down the motor for a smooth, safe stop over 6.5 seconds.
+   - Once the car is fully stopped, it triggers the SIM800L to make an emergency phone call!
+
+### Code Changes Implemented
+- [x] **`main.py`**: Added a `drowsy_count` tracker. It now accurately tracks how many times you fall asleep and sends the correct letter (`W` or `E`) to the hardware.
+- [x] **`esp32_controller.ino`**: Stripped out the old `D` commands and replaced them with individual `W` (buzzer only) and `E` (unavoidable motor stop + call) logic blocks.
+
+> [!TIP]
+> Make sure to upload the updated `esp32_controller.ino` code to your ESP32 board in Arduino IDE before testing!
+
+Have fun presenting this new logic! 🚀
