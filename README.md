@@ -15,7 +15,9 @@ You can find these parts online or at an electronics store:
 4. **Active Buzzer**: Makes a loud beep sound.
 5. **SIM800L Module**: A tiny phone that makes emergency calls (requires a SIM card).
 6. **Webcam**: Your laptop's built-in camera works perfectly!
-7. **Jumper Wires**: To connect everything together.
+7. **Green & Red LEDs**: Visual status and warning indicator lights.
+8. **220Ω Resistors (x2)**: Current-limiting resistors to protect your LEDs and ESP32 pins.
+9. **Jumper Wires & Breadboard**: To connect everything together.
 
 ---
 
@@ -48,6 +50,13 @@ It's just like plugging in Lego pieces! Look at the names on the pins and connec
 | **TX**         | **RX**             |
 | **RX**         | **TX**             |
 | **GND**        | **GND**            |
+
+### 5. Connect ESP32 to the Status & Warning LEDs (New)
+| From ESP32 Pin | Connect To | Details |
+| -------------- | ---------- | ------- |
+| **GPIO18**     | **Green LED Anode (+)** | Connect in series through a 220Ω resistor |
+| **GPIO19**     | **Red LED Anode (+)** | Connect in series through a 220Ω resistor |
+| **GND**        | **LED Cathodes (-)** | Connect both LED negative (shorter) legs to Ground |
 
 *(⚠️ **Important Note**: The SIM800L needs a battery that provides exactly 3.7V to 4.2V to work properly! Don't power it directly from the ESP32's 3.3V pin.)*
 
@@ -105,9 +114,10 @@ Curious about how your laptop actually stops the motor? Here is the exact proces
    - If you get 3 Strikes, Python panics and sends **`E`** (Emergency) along with your live GPS location through the USB cable! (e.g., `E28.61,77.20`)
 4. **The Communication (Serial):** The USB cable acts as a bridge (called "Serial Communication") between your big laptop and the tiny ESP32 brain.
 5. **The Reaction (ESP32):** The ESP32 is always listening. 
-   - When it hears **`N`**, it tells the L298N Motor Driver to keep the motor spinning at full speed.
-   - When it hears **`W`**, it turns the buzzer on to wake you up.
+   - When it hears **`N`**, it turns the **Green LED ON** and **Red LED OFF**, and tells the L298N Motor Driver to keep the motor spinning at full speed.
+   - When it hears **`W`**, it turns the **Green LED OFF**, **Red LED ON**, and turns the buzzer on to wake you up.
    - When it hears **`E`** and the GPS data, it triggers the full emergency sequence:
+     - Turns the **Green LED OFF** and **Red LED ON**.
      - Slowly reduces motor power to `0` (bringing the car to a safe stop).
      - Turns the buzzer on.
      - Uses `AT` commands to tell the SIM800L module to immediately send an SMS with a Google Maps link of your location!

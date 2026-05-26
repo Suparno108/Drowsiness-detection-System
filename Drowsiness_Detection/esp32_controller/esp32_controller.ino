@@ -2,6 +2,8 @@
 #define IN2 26
 #define ENA 27
 #define BUZZER 14
+#define GREEN_LED 18
+#define RED_LED 19
 
 void setup() {
   Serial.begin(9600);
@@ -10,17 +12,23 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(ENA, OUTPUT);
   pinMode(BUZZER, OUTPUT);
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
 
   // Initialize motor direction
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
+
+  // Normal conditions at start
+  digitalWrite(GREEN_LED, HIGH);
+  digitalWrite(RED_LED, LOW);
 }
 
 void makeCall(String gpsLocation) {
   // 1. Send SMS with GPS Location
   Serial.println("AT+CMGF=1"); // Set SMS to text mode
   delay(1000);
-  Serial.println("AT+CMGS=\"+919999999999\""); // Replace with your emergency contact number
+  Serial.println("AT+CMGS=\"+917699602984\""); // Replace with your emergency contact number
   delay(1000);
   
   Serial.print("Emergency! Driver Drowsiness Detected. GPS Location: https://maps.google.com/?q=");
@@ -46,10 +54,14 @@ void loop() {
 
       if(command == 'W') {
         // Warning (Strike 1 or 2)
+        digitalWrite(GREEN_LED, LOW);
+        digitalWrite(RED_LED, HIGH);
         digitalWrite(BUZZER, HIGH);
       }
       else if(command == 'E') {
         // Emergency (Strike 3)
+        digitalWrite(GREEN_LED, LOW);
+        digitalWrite(RED_LED, HIGH);
         digitalWrite(BUZZER, HIGH);
 
         // Gradually slow motor (Unavoidable stop)
@@ -68,6 +80,8 @@ void loop() {
       }
       else if(command == 'N') {
         // Normal (Eyes Open)
+        digitalWrite(GREEN_LED, HIGH);
+        digitalWrite(RED_LED, LOW);
         analogWrite(ENA, 255);
         digitalWrite(BUZZER, LOW);
       }
