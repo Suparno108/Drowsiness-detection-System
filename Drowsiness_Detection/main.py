@@ -51,8 +51,46 @@ def calculate_ear(eye_points, landmarks, frame_w, frame_h):
 
 import urllib.request
 import json
+import subprocess
 
 def get_current_location():
+    # Method 1: Try Windows native Location Services (High Accuracy Wi-Fi/GPS Triangulation)
+    try:
+        ps_command = (
+            'Add-Type -AssemblyName System.Device; '
+            '$GeoWatcher = New-Object System.Device.Location.GeoCoordinateWatcher; '
+            '$GeoWatcher.Start(); '
+            '$timeout = 15; '
+            'while (($GeoWatcher.Status -eq "NoData" -or $GeoWatcher.Status -eq "Initializing") -and $timeout -gt 0) { '
+            '  Start-Sleep -Milliseconds 200; '
+            '  $timeout--; '
+            '}; '
+            'if ($GeoWatcher.Status -eq "Ready") { '
+            '  $loc = $GeoWatcher.Position.Location; '
+            '  Write-Output "$($loc.Latitude),$($loc.Longitude)"; '
+            '} else { '
+            '  Write-Output "FAIL"; '
+            '}'
+        )
+        # Prevent CMD window flashing
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        result = subprocess.run(
+            ["powershell", "-Command", ps_command],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            startupinfo=startupinfo
+        )
+        output = result.stdout.strip()
+        if output and output != "FAIL" and not output.startswith("Error"):
+            print("Successfully obtained high-accuracy location from Windows Location Services.")
+            return output
+    except Exception as e:
+        pass
+
+    # Method 2: Fallback to coarse IP-based location (usually center of nearest city)
+    print("Windows high-accuracy location unavailable. Falling back to IP-based location...")
     try:
         req = urllib.request.Request('https://ipinfo.io/json')
         with urllib.request.urlopen(req, timeout=5) as response:
@@ -61,7 +99,7 @@ def get_current_location():
             if loc:
                 return loc
     except Exception as e:
-        print(f"Error fetching location: {e}")
+        print(f"Error fetching fallback IP location: {e}")
     return "Unknown"
 
 # Initialize serial communication with ESP32
@@ -83,6 +121,15 @@ drowsy_count = 0
 print("Starting Camera...")
 
 while True:
+    # Read diagnostic and GSM messages from ESP32
+    if esp and esp.in_waiting > 0:
+        try:
+            incoming = esp.readline().decode('utf-8', errors='ignore').strip()
+            if incoming:
+                print(f"[ESP32] {incoming}")
+        except Exception as e:
+            pass
+
     ret, frame = cap.read()
     if not ret:
         break
