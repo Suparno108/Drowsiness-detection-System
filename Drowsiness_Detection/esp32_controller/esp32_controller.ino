@@ -5,6 +5,8 @@
 #define GREEN_LED 18
 #define RED_LED 19
 
+bool emergencyStopped = false; // Flag to lock the motor permanently after Strike 3
+
 void setup() {
   Serial.begin(9600);
   // Initialize Serial2 for SIM800L GSM module (RX=16, TX=17)
@@ -75,7 +77,7 @@ void makeCall(String gpsLocation) {
   printGSMResponse(1000);
 
   Serial.println("Setting recipient phone number (AT+CMGS)...");
-  Serial2.println("AT+CMGS=\"+918972250166\"");
+  Serial2.println("AT+CMGS=\"+916297778727\"");
   printGSMResponse(1500); // Sometimes takes slightly longer for '>' prompt
   
   Serial.println("Sending emergency message content...");
@@ -87,8 +89,8 @@ void makeCall(String gpsLocation) {
   printGSMResponse(12000); // SMS send can take 5-10s
 
   // 2. Make the phone call
-  Serial.println("Dialing voice call to +918972250166 (ATD)...");
-  Serial2.println("ATD+918972250166;");
+  Serial.println("Dialing voice call to +916297778727 (ATD)...");
+  Serial2.println("ATD+916297778727;");
   
   // Wait a moment for call initiation to register on the GSM module
   delay(2000);
@@ -188,37 +190,44 @@ void loop() {
         char command = commandStr.charAt(0);
 
         if(command == 'W') {
-          // Warning (Strike 1 or 2)
-          digitalWrite(GREEN_LED, LOW);
-          digitalWrite(RED_LED, HIGH);
-          digitalWrite(BUZZER, HIGH);
+          if (!emergencyStopped) {
+            // Warning (Strike 1 or 2)
+            digitalWrite(GREEN_LED, LOW);
+            digitalWrite(RED_LED, HIGH);
+            digitalWrite(BUZZER, HIGH);
+          }
         }
         else if(command == 'E') {
-          // Emergency (Strike 3)
-          digitalWrite(GREEN_LED, LOW);
-          digitalWrite(RED_LED, HIGH);
-          digitalWrite(BUZZER, HIGH);
+          if (!emergencyStopped) {
+            emergencyStopped = true; // Lock the emergency stop permanently
+            // Emergency (Strike 3)
+            digitalWrite(GREEN_LED, LOW);
+            digitalWrite(RED_LED, HIGH);
+            digitalWrite(BUZZER, HIGH);
 
-          // Gradually slow motor (Unavoidable stop)
-          for(int speed=255; speed>=0; speed-=20){
-            analogWrite(ENA, speed);
-            delay(500);
-          }
+            // Gradually slow motor (Unavoidable stop)
+            for(int speed=255; speed>=0; speed-=20){
+              analogWrite(ENA, speed);
+              delay(500);
+            }
 
-          analogWrite(ENA, 0);
-          
-          String gpsLocation = "Unknown";
-          if (commandStr.length() > 1) {
-            gpsLocation = commandStr.substring(1);
+            analogWrite(ENA, 0);
+            
+            String gpsLocation = "Unknown";
+            if (commandStr.length() > 1) {
+              gpsLocation = commandStr.substring(1);
+            }
+            makeCall(gpsLocation);
           }
-          makeCall(gpsLocation);
         }
         else if(command == 'N') {
-          // Normal (Eyes Open)
-          digitalWrite(GREEN_LED, HIGH);
-          digitalWrite(RED_LED, LOW);
-          analogWrite(ENA, 255);
-          digitalWrite(BUZZER, LOW);
+          if (!emergencyStopped) {
+            // Normal (Eyes Open)
+            digitalWrite(GREEN_LED, HIGH);
+            digitalWrite(RED_LED, LOW);
+            analogWrite(ENA, 255);
+            digitalWrite(BUZZER, LOW);
+          }
         }
       }
     }
