@@ -113,6 +113,22 @@ print("Fetching current GPS location...")
 current_location = get_current_location()
 print(f"Location obtained: {current_location}")
 
+# Read and print any startup/diagnostic messages from ESP32
+if esp:
+    print("Reading ESP32 startup diagnostics...")
+    time.sleep(2.0)  # Wait for boot and synchronization logs to complete
+    if esp.in_waiting > 0:
+        print("\n--- ESP32 Startup Diagnostics ---")
+        # Read all available lines
+        while esp.in_waiting > 0:
+            try:
+                line = esp.readline().decode('utf-8', errors='ignore').strip()
+                if line:
+                    print(f"[ESP32 Boot] {line}")
+            except Exception:
+                break
+        print("---------------------------------\n")
+
 cap = cv2.VideoCapture(0)
 closed_start = None
 last_state = 'N'
